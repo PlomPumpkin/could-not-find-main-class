@@ -1,0 +1,699 @@
+/*     */ package me.xADudex.Main
+/*     */ 
+/*     */ import com.massivecraft.factions.Factions;
+/*     */ import com.palmergames.bukkit.towny.Towny;
+/*     */ import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
+/*     */ import com.wimbli.WorldBorder.WorldBorder;
+/*     */ import java.io.File;
+/*     */ import java.io.IOException;
+/*     */ import java.io.InputStreamReader;
+/*     */ import java.io.PrintStream;
+/*     */ import java.util.List;
+/*     */ import java.util.logging.Level;
+/*     */ import java.util.logging.Logger;
+/*     */ import me.ryanhamshire.GriefPrevention.GriefPrevention;
+/*     */ import net.milkbowl.vault.economy.Economy;
+/*     */ import org.bukkit.Bukkit;
+/*     */ import org.bukkit.ChatColor;
+/*     */ import org.bukkit.Server;
+/*     */ import org.bukkit.command.Command;
+/*     */ import org.bukkit.command.CommandSender;
+/*     */ import org.bukkit.configuration.file.FileConfiguration;
+/*     */ import org.bukkit.configuration.file.YamlConfiguration;
+/*     */ import org.bukkit.entity.Player;
+/*     */ import org.bukkit.plugin.Plugin;
+/*     */ import org.bukkit.plugin.PluginDescriptionFile;
+/*     */ import org.bukkit.plugin.PluginManager;
+/*     */ import org.bukkit.plugin.RegisteredServiceProvider;
+/*     */ import org.bukkit.plugin.ServicesManager;
+/*     */ import org.bukkit.plugin.java.JavaPlugin;
+/*     */ import org.bukkit.scheduler.BukkitScheduler;
+/*     */ 
+/*     */ 
+/*     */ 
+/*     */ public class JavaProject
+/*     */   extends JavaPlugin
+/*     */ {
+/*  37 */   Timer timer = new Timer(this);
+/*     */   
+/*     */   Updater updater;
+/*  40 */   ZoneManager zoneManager = new ZoneManager(this);
+/*  41 */   CmdHandler cmdHandler = new CmdHandler(this);
+/*  42 */   Events events = new Events(this);
+/*  43 */   PortalManager portalManager = new PortalManager(this);
+/*     */   
+/*  45 */   Economy econ = null;
+/*     */   
+/*  47 */   String updateMsg = null;
+/*     */   
+/*  49 */   final String[] oldConfigs = new String[0];
+/*     */   
+/*     */   FileConfiguration defaultConfig;
+/*     */   
+/*  53 */   boolean townyHook = false;
+/*  54 */   boolean factionHook = false;
+/*  55 */   boolean worldBorderHook = false;
+/*  56 */   boolean worldBorderInstalled = false;
+/*  57 */   boolean griefPreventionHook = false;
+/*  58 */   boolean vaultHook = false;
+/*  59 */   boolean worldGuardHook = false;
+/*     */   
+/*  61 */   private boolean disabling = false;
+/*     */   List<String> ignoreFactions;
+/*     */   List<String> ignoreTowns;
+/*     */   List<String> ignoreGriefPrevetionPlayers;
+/*     */   List<String> ignoreWorldGuardRegions;
+/*     */   
+/*     */   boolean useFactionHook()
+/*     */   {
+/*  69 */     return this.factionHook;
+/*     */   }
+/*     */   
+/*     */   boolean useTownyHook() {
+/*  73 */     return this.townyHook;
+/*     */   }
+/*     */   
+/*     */   boolean useWorldBorderHook() {
+/*  77 */     return this.worldBorderHook;
+/*     */   }
+/*     */   
+/*     */   boolean isWorldBorderInstalled() {
+/*  81 */     return this.worldBorderInstalled;
+/*     */   }
+/*     */   
+/*     */   boolean useGriefPreventionHook() {
+/*  85 */     return this.griefPreventionHook;
+/*     */   }
+/*     */   
+/*     */   boolean useVaultHook() {
+/*  89 */     return this.vaultHook;
+/*     */   }
+/*     */   
+/*     */   boolean useWorldGuardHook() {
+/*  93 */     return this.worldGuardHook;
+/*     */   }
+/*     */   
+/*     */   boolean isDisabling() {
+/*  97 */     return this.disabling;
+/*     */   }
+/*     */   
+/*     */   public void checkForOldConfig() {
+/* 101 */     File f = new File(getDataFolder(), "config.yml");
+/* 102 */     if (f.exists())
+/*     */     {
+/* 104 */       if (FileTools.read(f).replaceAll(" ", "").toLowerCase().contains("# Range.From:\n# this is from where the range is, can be \"spawn\", \"rlz\"(From the RandomLocationZone)".replaceAll(" ", "").toLowerCase())) {
+/* 105 */         f.renameTo(new File(getDataFolder(), "oldConfig.yml"));
+/* 106 */         getLogger().info("Found old config, renamed it to oldConfig.yml");
+/*     */       }
+/*     */     }
+/*     */   }
+/*     */   
+/*     */   /* Error */
+/*     */   @Deprecated
+/*     */   public void configSave()
+/*     */   {
+/*     */     // Byte code:
+/*     */     //   0: new 187	java/util/HashMap
+/*     */     //   3: dup
+/*     */     //   4: invokespecial 189	java/util/HashMap:<init>	()V
+/*     */     //   7: astore_1
+/*     */     //   8: aload_0
+/*     */     //   9: invokevirtual 190	me/xADudex/RandomLocation/Main:getConfig	()Lorg/bukkit/configuration/file/FileConfiguration;
+/*     */     //   12: invokevirtual 194	org/bukkit/configuration/file/FileConfiguration:getDefaults	()Lorg/bukkit/configuration/Configuration;
+/*     */     //   15: iconst_1
+/*     */     //   16: invokeinterface 200 2 0
+/*     */     //   21: invokeinterface 206 1 0
+/*     */     //   26: astore_3
+/*     */     //   27: goto +27 -> 54
+/*     */     //   30: aload_3
+/*     */     //   31: invokeinterface 212 1 0
+/*     */     //   36: checkcast 83	java/lang/String
+/*     */     //   39: astore_2
+/*     */     //   40: aload_1
+/*     */     //   41: aload_2
+/*     */     //   42: aload_0
+/*     */     //   43: invokevirtual 190	me/xADudex/RandomLocation/Main:getConfig	()Lorg/bukkit/configuration/file/FileConfiguration;
+/*     */     //   46: aload_2
+/*     */     //   47: invokevirtual 218	org/bukkit/configuration/file/FileConfiguration:get	(Ljava/lang/String;)Ljava/lang/Object;
+/*     */     //   50: invokevirtual 222	java/util/HashMap:put	(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+/*     */     //   53: pop
+/*     */     //   54: aload_3
+/*     */     //   55: invokeinterface 226 1 0
+/*     */     //   60: ifne -30 -> 30
+/*     */     //   63: aload_0
+/*     */     //   64: invokevirtual 190	me/xADudex/RandomLocation/Main:getConfig	()Lorg/bukkit/configuration/file/FileConfiguration;
+/*     */     //   67: iconst_1
+/*     */     //   68: invokevirtual 229	org/bukkit/configuration/file/FileConfiguration:getKeys	(Z)Ljava/util/Set;
+/*     */     //   71: invokeinterface 206 1 0
+/*     */     //   76: astore_3
+/*     */     //   77: goto +27 -> 104
+/*     */     //   80: aload_3
+/*     */     //   81: invokeinterface 212 1 0
+/*     */     //   86: checkcast 83	java/lang/String
+/*     */     //   89: astore_2
+/*     */     //   90: aload_1
+/*     */     //   91: aload_2
+/*     */     //   92: aload_0
+/*     */     //   93: invokevirtual 190	me/xADudex/RandomLocation/Main:getConfig	()Lorg/bukkit/configuration/file/FileConfiguration;
+/*     */     //   96: aload_2
+/*     */     //   97: invokevirtual 218	org/bukkit/configuration/file/FileConfiguration:get	(Ljava/lang/String;)Ljava/lang/Object;
+/*     */     //   100: invokevirtual 222	java/util/HashMap:put	(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+/*     */     //   103: pop
+/*     */     //   104: aload_3
+/*     */     //   105: invokeinterface 226 1 0
+/*     */     //   110: ifne -30 -> 80
+/*     */     //   113: new 124	java/io/File
+/*     */     //   116: dup
+/*     */     //   117: aload_0
+/*     */     //   118: invokevirtual 126	me/xADudex/RandomLocation/Main:getDataFolder	()Ljava/io/File;
+/*     */     //   121: ldc -126
+/*     */     //   123: invokespecial 132	java/io/File:<init>	(Ljava/io/File;Ljava/lang/String;)V
+/*     */     //   126: astore_2
+/*     */     //   127: aload_2
+/*     */     //   128: invokevirtual 230	java/io/File:delete	()Z
+/*     */     //   131: pop
+/*     */     //   132: aconst_null
+/*     */     //   133: astore_3
+/*     */     //   134: aconst_null
+/*     */     //   135: astore 4
+/*     */     //   137: aload_0
+/*     */     //   138: ldc -126
+/*     */     //   140: invokevirtual 233	me/xADudex/RandomLocation/Main:getResource	(Ljava/lang/String;)Ljava/io/InputStream;
+/*     */     //   143: astore_3
+/*     */     //   144: aload_2
+/*     */     //   145: invokevirtual 237	java/io/File:getParentFile	()Ljava/io/File;
+/*     */     //   148: invokevirtual 240	java/io/File:mkdirs	()Z
+/*     */     //   151: pop
+/*     */     //   152: new 243	java/io/FileOutputStream
+/*     */     //   155: dup
+/*     */     //   156: aload_2
+/*     */     //   157: invokevirtual 245	java/io/File:getAbsolutePath	()Ljava/lang/String;
+/*     */     //   160: invokespecial 248	java/io/FileOutputStream:<init>	(Ljava/lang/String;)V
+/*     */     //   163: astore 4
+/*     */     //   165: sipush 1024
+/*     */     //   168: newarray <illegal type>
+/*     */     //   170: astore 5
+/*     */     //   172: goto +13 -> 185
+/*     */     //   175: aload 4
+/*     */     //   177: aload 5
+/*     */     //   179: iconst_0
+/*     */     //   180: iload 6
+/*     */     //   182: invokevirtual 250	java/io/OutputStream:write	([BII)V
+/*     */     //   185: aload_3
+/*     */     //   186: aload 5
+/*     */     //   188: invokevirtual 256	java/io/InputStream:read	([B)I
+/*     */     //   191: dup
+/*     */     //   192: istore 6
+/*     */     //   194: iconst_m1
+/*     */     //   195: if_icmpne -20 -> 175
+/*     */     //   198: aload_3
+/*     */     //   199: invokevirtual 261	java/io/InputStream:close	()V
+/*     */     //   202: aload 4
+/*     */     //   204: invokevirtual 264	java/io/OutputStream:flush	()V
+/*     */     //   207: aload 4
+/*     */     //   209: invokevirtual 267	java/io/OutputStream:close	()V
+/*     */     //   212: goto +94 -> 306
+/*     */     //   215: astore 5
+/*     */     //   217: aload 5
+/*     */     //   219: invokevirtual 268	java/io/IOException:printStackTrace	()V
+/*     */     //   222: aload_3
+/*     */     //   223: ifnull +17 -> 240
+/*     */     //   226: aload_3
+/*     */     //   227: invokevirtual 261	java/io/InputStream:close	()V
+/*     */     //   230: goto +10 -> 240
+/*     */     //   233: astore 8
+/*     */     //   235: aload 8
+/*     */     //   237: invokevirtual 268	java/io/IOException:printStackTrace	()V
+/*     */     //   240: aload 4
+/*     */     //   242: ifnull +102 -> 344
+/*     */     //   245: aload 4
+/*     */     //   247: invokevirtual 267	java/io/OutputStream:close	()V
+/*     */     //   250: goto +94 -> 344
+/*     */     //   253: astore 8
+/*     */     //   255: aload 8
+/*     */     //   257: invokevirtual 268	java/io/IOException:printStackTrace	()V
+/*     */     //   260: goto +84 -> 344
+/*     */     //   263: astore 7
+/*     */     //   265: aload_3
+/*     */     //   266: ifnull +17 -> 283
+/*     */     //   269: aload_3
+/*     */     //   270: invokevirtual 261	java/io/InputStream:close	()V
+/*     */     //   273: goto +10 -> 283
+/*     */     //   276: astore 8
+/*     */     //   278: aload 8
+/*     */     //   280: invokevirtual 268	java/io/IOException:printStackTrace	()V
+/*     */     //   283: aload 4
+/*     */     //   285: ifnull +18 -> 303
+/*     */     //   288: aload 4
+/*     */     //   290: invokevirtual 267	java/io/OutputStream:close	()V
+/*     */     //   293: goto +10 -> 303
+/*     */     //   296: astore 8
+/*     */     //   298: aload 8
+/*     */     //   300: invokevirtual 268	java/io/IOException:printStackTrace	()V
+/*     */     //   303: aload 7
+/*     */     //   305: athrow
+/*     */     //   306: aload_3
+/*     */     //   307: ifnull +17 -> 324
+/*     */     //   310: aload_3
+/*     */     //   311: invokevirtual 261	java/io/InputStream:close	()V
+/*     */     //   314: goto +10 -> 324
+/*     */     //   317: astore 8
+/*     */     //   319: aload 8
+/*     */     //   321: invokevirtual 268	java/io/IOException:printStackTrace	()V
+/*     */     //   324: aload 4
+/*     */     //   326: ifnull +18 -> 344
+/*     */     //   329: aload 4
+/*     */     //   331: invokevirtual 267	java/io/OutputStream:close	()V
+/*     */     //   334: goto +10 -> 344
+/*     */     //   337: astore 8
+/*     */     //   339: aload 8
+/*     */     //   341: invokevirtual 268	java/io/IOException:printStackTrace	()V
+/*     */     //   344: aload_0
+/*     */     //   345: invokevirtual 273	me/xADudex/RandomLocation/Main:reloadConfig	()V
+/*     */     //   348: aload_1
+/*     */     //   349: invokevirtual 276	java/util/HashMap:entrySet	()Ljava/util/Set;
+/*     */     //   352: invokeinterface 206 1 0
+/*     */     //   357: astore 6
+/*     */     //   359: goto +39 -> 398
+/*     */     //   362: aload 6
+/*     */     //   364: invokeinterface 212 1 0
+/*     */     //   369: checkcast 280	java/util/Map$Entry
+/*     */     //   372: astore 5
+/*     */     //   374: aload_0
+/*     */     //   375: invokevirtual 190	me/xADudex/RandomLocation/Main:getConfig	()Lorg/bukkit/configuration/file/FileConfiguration;
+/*     */     //   378: aload 5
+/*     */     //   380: invokeinterface 282 1 0
+/*     */     //   385: checkcast 83	java/lang/String
+/*     */     //   388: aload 5
+/*     */     //   390: invokeinterface 285 1 0
+/*     */     //   395: invokevirtual 288	org/bukkit/configuration/file/FileConfiguration:set	(Ljava/lang/String;Ljava/lang/Object;)V
+/*     */     //   398: aload 6
+/*     */     //   400: invokeinterface 226 1 0
+/*     */     //   405: ifne -43 -> 362
+/*     */     //   408: aload_0
+/*     */     //   409: invokevirtual 292	me/xADudex/RandomLocation/Main:saveConfig	()V
+/*     */     //   412: return
+/*     */     // Line number table:
+/*     */     //   Java source line #113	-> byte code offset #0
+/*     */     //   Java source line #114	-> byte code offset #8
+/*     */     //   Java source line #115	-> byte code offset #40
+/*     */     //   Java source line #114	-> byte code offset #54
+/*     */     //   Java source line #117	-> byte code offset #63
+/*     */     //   Java source line #118	-> byte code offset #90
+/*     */     //   Java source line #117	-> byte code offset #104
+/*     */     //   Java source line #120	-> byte code offset #113
+/*     */     //   Java source line #121	-> byte code offset #127
+/*     */     //   Java source line #123	-> byte code offset #132
+/*     */     //   Java source line #124	-> byte code offset #134
+/*     */     //   Java source line #127	-> byte code offset #137
+/*     */     //   Java source line #129	-> byte code offset #144
+/*     */     //   Java source line #131	-> byte code offset #152
+/*     */     //   Java source line #133	-> byte code offset #165
+/*     */     //   Java source line #136	-> byte code offset #172
+/*     */     //   Java source line #137	-> byte code offset #175
+/*     */     //   Java source line #136	-> byte code offset #185
+/*     */     //   Java source line #139	-> byte code offset #198
+/*     */     //   Java source line #141	-> byte code offset #202
+/*     */     //   Java source line #142	-> byte code offset #207
+/*     */     //   Java source line #143	-> byte code offset #212
+/*     */     //   Java source line #144	-> byte code offset #217
+/*     */     //   Java source line #146	-> byte code offset #222
+/*     */     //   Java source line #148	-> byte code offset #226
+/*     */     //   Java source line #149	-> byte code offset #230
+/*     */     //   Java source line #150	-> byte code offset #235
+/*     */     //   Java source line #153	-> byte code offset #240
+/*     */     //   Java source line #155	-> byte code offset #245
+/*     */     //   Java source line #156	-> byte code offset #250
+/*     */     //   Java source line #157	-> byte code offset #255
+/*     */     //   Java source line #145	-> byte code offset #263
+/*     */     //   Java source line #146	-> byte code offset #265
+/*     */     //   Java source line #148	-> byte code offset #269
+/*     */     //   Java source line #149	-> byte code offset #273
+/*     */     //   Java source line #150	-> byte code offset #278
+/*     */     //   Java source line #153	-> byte code offset #283
+/*     */     //   Java source line #155	-> byte code offset #288
+/*     */     //   Java source line #156	-> byte code offset #293
+/*     */     //   Java source line #157	-> byte code offset #298
+/*     */     //   Java source line #160	-> byte code offset #303
+/*     */     //   Java source line #146	-> byte code offset #306
+/*     */     //   Java source line #148	-> byte code offset #310
+/*     */     //   Java source line #149	-> byte code offset #314
+/*     */     //   Java source line #150	-> byte code offset #319
+/*     */     //   Java source line #153	-> byte code offset #324
+/*     */     //   Java source line #155	-> byte code offset #329
+/*     */     //   Java source line #156	-> byte code offset #334
+/*     */     //   Java source line #157	-> byte code offset #339
+/*     */     //   Java source line #162	-> byte code offset #344
+/*     */     //   Java source line #163	-> byte code offset #348
+/*     */     //   Java source line #164	-> byte code offset #374
+/*     */     //   Java source line #163	-> byte code offset #398
+/*     */     //   Java source line #166	-> byte code offset #408
+/*     */     //   Java source line #168	-> byte code offset #412
+/*     */     // Local variable table:
+/*     */     //   start	length	slot	name	signature
+/*     */     //   0	413	0	this	Main
+/*     */     //   7	342	1	values	java.util.HashMap<String, Object>
+/*     */     //   39	8	2	s	String
+/*     */     //   89	8	2	s	String
+/*     */     //   126	31	2	f	File
+/*     */     //   26	79	3	localIterator	java.util.Iterator
+/*     */     //   133	178	3	is	java.io.InputStream
+/*     */     //   135	195	4	os	java.io.OutputStream
+/*     */     //   170	17	5	buffer	byte[]
+/*     */     //   215	3	5	e	IOException
+/*     */     //   372	17	5	e	java.util.Map.Entry<String, Object>
+/*     */     //   175	6	6	bytesRead	int
+/*     */     //   192	207	6	bytesRead	int
+/*     */     //   263	41	7	localObject	Object
+/*     */     //   233	3	8	e1	IOException
+/*     */     //   253	3	8	e1	IOException
+/*     */     //   276	3	8	e1	IOException
+/*     */     //   296	3	8	e1	IOException
+/*     */     //   317	3	8	e1	IOException
+/*     */     //   337	3	8	e1	IOException
+/*     */     // Exception table:
+/*     */     //   from	to	target	type
+/*     */     //   137	212	215	java/io/IOException
+/*     */     //   226	230	233	java/io/IOException
+/*     */     //   245	250	253	java/io/IOException
+/*     */     //   137	222	263	finally
+/*     */     //   269	273	276	java/io/IOException
+/*     */     //   288	293	296	java/io/IOException
+/*     */     //   310	314	317	java/io/IOException
+/*     */     //   329	334	337	java/io/IOException
+/*     */   }
+/*     */   
+/*     */   public void saveDefaultConfigSafe()
+/*     */   {
+/* 171 */     saveDefaultConfig();
+/* 172 */     reloadConfig();
+/* 173 */     FileConfiguration c = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "config.yml"));
+/* 174 */     for (String key : getDefaultConfig().getKeys(true)) {
+/* 175 */       getLogger().info(key + ": " + getDefaultConfig().get(key));
+/* 176 */       if (!c.contains(key)) {
+/* 177 */         getConfig().set(key, getDefaultConfig().get(key));
+/*     */       }
+/*     */     }
+/* 180 */     saveConfig();
+/*     */   }
+/*     */   
+/*     */   public FileConfiguration getDefaultConfig() {
+/* 184 */     if (this.defaultConfig == null) {
+/* 185 */       this.defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(getResource("config.yml")));
+/*     */     }
+/* 187 */     return this.defaultConfig;
+/*     */   }
+/*     */   
+/*     */   public void onEnable() {
+/* 191 */     System.out.println("=================   Enabling RandomLocation   ==================");
+/* 192 */     checkForOldConfig();
+/*     */     
+/*     */ 
+/* 195 */     saveDefaultConfigSafe();
+/* 196 */     Zone.setPlugin(this);
+/*     */     
+/* 198 */     checkHooks();
+/*     */     
+/* 200 */     this.timer.startTimer();
+/* 201 */     System.out.println("================================================================");
+/* 202 */     this.zoneManager.loadAll();
+/* 203 */     this.zoneManager.startTask();
+/*     */     
+/* 205 */     this.zoneManager.backup.run();
+/*     */     
+/* 207 */     this.portalManager.startTask();
+/*     */     
+/* 209 */     checkForUpdate();
+/*     */     try
+/*     */     {
+/* 212 */       MetricsLite metrics = new MetricsLite(this);
+/* 213 */       metrics.start();
+/*     */     }
+/*     */     catch (IOException localIOException) {}
+/*     */     
+/*     */ 
+/* 218 */     getServer().getPluginManager().registerEvents(this.events, this);
+/* 219 */     System.out.println("================================================================");
+/*     */   }
+/*     */   
+/*     */   private List<String> getLowerCaseList(String path) {
+/* 223 */     List<String> list = getConfig().getStringList(path);
+/* 224 */     for (int i = 0; i < list.size(); i++) {
+/* 225 */       list.set(i, ((String)list.get(i)).toLowerCase());
+/*     */     }
+/*     */     
+/* 228 */     return list;
+/*     */   }
+/*     */   
+/*     */   public void checkHooks()
+/*     */   {
+/* 233 */     this.townyHook = false;
+/* 234 */     this.factionHook = false;
+/* 235 */     this.worldBorderHook = false;
+/* 236 */     this.worldBorderInstalled = false;
+/* 237 */     this.griefPreventionHook = false;
+/* 238 */     this.vaultHook = false;
+/* 239 */     this.worldGuardHook = false;
+/*     */     try
+/*     */     {
+/* 242 */       if (getConfig().getBoolean("Hooks.UseFactionSupport")) {
+/* 243 */         Plugin p = getServer().getPluginManager().getPlugin("Factions");
+/*     */         
+/* 245 */         if (p != null) {
+/* 246 */           Class.forName("com.massivecraft.factions.Factions");
+/* 247 */           Class.forName("com.massivecraft.factions.entity.BoardColl");
+/* 248 */           Class.forName("com.massivecraft.factions.entity.Faction");
+/* 249 */           Class.forName("com.massivecraft.massivecore.ps.PS");
+/*     */         }
+/*     */         
+/* 252 */         if ((p instanceof Factions)) {
+/* 253 */           this.factionHook = true;
+/* 254 */         } else if (p != null) {
+/* 255 */           logPluginUncompatible("Factions");
+/*     */         }
+/*     */       }
+/*     */     } catch (Exception e) {
+/* 259 */       logPluginUncompatible("Factions");
+/*     */     }
+/* 261 */     this.ignoreFactions = getLowerCaseList("Hooks.IgnoreFactions");
+/*     */     try
+/*     */     {
+/* 264 */       if (getConfig().getBoolean("Hooks.UseTownySupport")) {
+/* 265 */         Plugin p = getServer().getPluginManager().getPlugin("Towny");
+/*     */         
+/* 267 */         if (p != null) {
+/* 268 */           Class.forName("com.palmergames.bukkit.towny.Towny");
+/* 269 */           Class.forName("com.palmergames.bukkit.towny.object.WorldCoord");
+/*     */         }
+/*     */         
+/* 272 */         if ((p instanceof Towny))
+/*     */         {
+/* 274 */           this.townyHook = true;
+/* 275 */         } else if (p != null) {
+/* 276 */           logPluginUncompatible("Towny");
+/*     */         }
+/*     */       }
+/*     */     } catch (Exception e) {
+/* 280 */       logPluginUncompatible("Towny");
+/*     */     }
+/* 282 */     this.ignoreTowns = getLowerCaseList("Hooks.IgnoreTowns");
+/*     */     try
+/*     */     {
+/* 285 */       Plugin plugin = getServer().getPluginManager().getPlugin("WorldBorder");
+/*     */       
+/* 287 */       if (plugin != null) {
+/* 288 */         Class.forName("com.wimbli.WorldBorder.WorldBorder");
+/* 289 */         Class.forName("com.wimbli.WorldBorder.BorderData");
+/* 290 */         Class.forName("com.wimbli.WorldBorder.Config");
+/*     */       }
+/*     */       
+/* 293 */       boolean hook = getConfig().getBoolean("Hooks.UseWorldBorderSupport");
+/* 294 */       if ((plugin instanceof WorldBorder))
+/*     */       {
+/* 296 */         this.worldBorderInstalled = true;
+/* 297 */         if (hook) {
+/* 298 */           this.worldBorderHook = true;
+/*     */         }
+/* 300 */       } else if (plugin != null) {
+/* 301 */         logPluginUncompatible("WorldBorder");
+/*     */       }
+/*     */     } catch (Exception e) {
+/* 304 */       logPluginUncompatible("WorldBorder");
+/*     */     }
+/*     */     try
+/*     */     {
+/* 308 */       if (getConfig().getBoolean("Hooks.UseGriefPreventionSupport"))
+/*     */       {
+/* 310 */         JavaPlugin p = (JavaPlugin)getServer().getPluginManager().getPlugin("GriefPrevention");
+/*     */         
+/* 312 */         if (p != null) {
+/* 313 */           Class.forName("me.ryanhamshire.GriefPrevention.GriefPrevention");
+/*     */         }
+/* 315 */         if ((p instanceof GriefPrevention)) {
+/* 316 */           this.griefPreventionHook = true;
+/* 317 */         } else if (p != null) {
+/* 318 */           logPluginUncompatible("GriefPrevention");
+/*     */         }
+/*     */       }
+/*     */     } catch (Exception e) {
+/* 322 */       logPluginUncompatible("GriefPrevention");
+/*     */     }
+/* 324 */     this.ignoreGriefPrevetionPlayers = getLowerCaseList("Hooks.IgnoreGriefPrevetionPlayers");
+/*     */     try
+/*     */     {
+/* 327 */       if (getConfig().getBoolean("Hooks.UseWorldGuardSupport")) {
+/* 328 */         Plugin p = getServer().getPluginManager().getPlugin("WorldGuard");
+/*     */         
+/* 330 */         if (p != null) {
+/* 331 */           Class.forName("com.sk89q.worldguard.bukkit.WorldGuardPlugin");
+/* 332 */           Class.forName("com.sk89q.worldedit.Vector");
+/* 333 */           if (!Class.forName("com.sk89q.worldguard.protection.ApplicableRegionSet").isInterface()) {
+/* 334 */             logPluginUncompatible("WorldGuard");
+/* 335 */             p = null;
+/*     */           }
+/*     */         }
+/*     */         
+/* 339 */         if ((p instanceof WorldGuardPlugin)) {
+/* 340 */           this.worldGuardHook = true;
+/* 341 */         } else if (p != null) {
+/* 342 */           logPluginUncompatible("WorldGuard");
+/*     */         }
+/*     */       }
+/*     */     } catch (Exception e) {
+/* 346 */       logPluginUncompatible("WorldGuard");
+/*     */     }
+/* 348 */     this.ignoreWorldGuardRegions = getLowerCaseList("Hooks.IgnoreWorldGuardRegions");
+/*     */     try
+/*     */     {
+/* 351 */       if ((getConfig().getBoolean("Hooks.UseVaultSupport")) && 
+/* 352 */         (getServer().getPluginManager().getPlugin("Vault") != null)) {
+/* 353 */         Class.forName("net.milkbowl.vault.economy.Economy");
+/*     */         
+/* 355 */         RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
+/* 356 */         if (rsp != null) {
+/* 357 */           this.econ = ((Economy)rsp.getProvider());
+/* 358 */           this.vaultHook = true;
+/*     */         }
+/*     */       }
+/*     */     }
+/*     */     catch (Exception e) {
+/* 363 */       logPluginUncompatible("Vault");
+/*     */     }
+/*     */     
+/* 366 */     getLogger().info("Hooking into Factions: " + this.factionHook);
+/* 367 */     getLogger().info("Hooking into Towny: " + this.townyHook);
+/* 368 */     getLogger().info("Hooking into WorldBorder: " + this.worldBorderHook);
+/* 369 */     getLogger().info("Hooking into GriefPrevention: " + this.griefPreventionHook);
+/* 370 */     getLogger().info("Hooking into Vault: " + this.vaultHook);
+/* 371 */     getLogger().info("Hooking into WorldGuard: " + this.worldGuardHook);
+/*     */   }
+/*     */   
+/*     */   void logPluginUncompatible(String plName) {
+/* 375 */     getLogger().warning("An unsupported version of " + plName + " was found!");
+/* 376 */     getLogger().warning("Hook disabled!");
+/* 377 */     getLogger().warning("If you are using the lates version of " + plName + " pleace report it");
+/* 378 */     getLogger().warning("as I (the developer) might not be aware of the update");
+/* 379 */     System.out.println("================================================================");
+/*     */   }
+/*     */   
+/*     */ 
+/*     */ 
+/*     */ 
+/*     */ 
+/*     */   void checkForUpdate()
+/*     */   {
+/* 388 */     if (getConfig().getBoolean("AutoUpdater.Enable")) {
+/* 389 */       Bukkit.getScheduler().runTaskAsynchronously(this.pl, this.updateTask);
+/*     */     }
+/*     */   }
+/*     */   
+/*     */   private long convertStringToTicks(String time) {
+/* 394 */     long ticks = 0L;
+/* 395 */     String[] args = time.split(" ");
+/* 396 */     String[] arrayOfString1; int j = (arrayOfString1 = args).length; for (int i = 0; i < j; i++) { String arg = arrayOfString1[i];
+/* 397 */       if (arg.contains("h")) {
+/* 398 */         arg = arg.replaceAll("[a-zA-Z]", "");
+/* 399 */         long raw = Long.parseLong(arg);
+/* 400 */         ticks += raw * 60L * 60L * 20L;
+/* 401 */       } else if (arg.contains("m")) {
+/* 402 */         arg = arg.replaceAll("[a-zA-Z]", "");
+/* 403 */         long raw = Long.parseLong(arg);
+/* 404 */         ticks += raw * 60L * 20L;
+/* 405 */       } else if (arg.contains("s")) {
+/* 406 */         arg = arg.replaceAll("[a-zA-Z]", "");
+/* 407 */         long raw = Long.parseLong(arg);
+/* 408 */         ticks += raw * 20L;
+/*     */       }
+/*     */     }
+/* 411 */     return ticks;
+/*     */   }
+/*     */   
+/*     */   public void onDisable() {
+/* 415 */     this.disabling = true;
+/* 416 */     Bukkit.getScheduler().cancelTasks(this);
+/* 417 */     this.zoneManager.backup.run();
+/*     */   }
+/*     */   
+/*     */   public boolean onCommand(CommandSender sender, Command command, String label, String[] args)
+/*     */   {
+/* 422 */     this.cmdHandler.onCommand(sender, command, label, args);
+/* 423 */     return false;
+/*     */   }
+/*     */   
+/*     */   void reload() {
+/* 427 */     System.out.println("=================   Reloading RandomLocation   =================");
+/* 428 */     reloadConfig();
+/* 429 */     checkHooks();
+/* 430 */     this.zoneManager.backup.run();
+/* 431 */     System.out.println("================================================================");
+/*     */   }
+/*     */   
+/* 434 */   final JavaPlugin pl = this;
+/* 435 */   private Runnable updateTask = new Runnable()
+/*     */   {
+/*     */     public void run() {
+/* 438 */       Updater.UpdateType type = Updater.UpdateType.NO_DOWNLOAD;
+/* 439 */       if (Main.this.getConfig().getBoolean("AutoUpdater.AutoDownload")) {
+/* 440 */         type = Updater.UpdateType.DEFAULT;
+/*     */       }
+/* 442 */       Updater updater = new Updater(Main.this.pl, 43931, Main.this.getFile(), type, false);
+/* 443 */       Updater.UpdateResult result = updater.getResult();
+/* 444 */       if (result == Updater.UpdateResult.SUCCESS) {
+/* 445 */         System.out.println("=========================   Updater   ==========================");
+/* 446 */         Main.this.pl.getLogger().info("Found and downloaded a newer version: v" + updater.getRemoteVersion());
+/* 447 */         Main.this.pl.getLogger().info("Previous version: v" + Main.this.pl.getDescription().getVersion());
+/* 448 */         Main.this.pl.getLogger().info("The update was downloaded and will take affect after next restart");
+/* 449 */         System.out.println("================================================================"); } else { Player localPlayer1;
+/* 450 */         Player p; if (result.equals(Updater.UpdateResult.UPDATE_AVAILABLE)) {
+/* 451 */           if (((updater.getLatestType().toLowerCase().contains("beta")) && (Main.this.getConfig().getBoolean("AutoUpdater.CheckForBetas"))) || (updater.getLatestType().toLowerCase().contains("release"))) {
+/* 452 */             String prefix = ChatColor.DARK_GRAY + "- " + ChatColor.GREEN;
+/* 453 */             Main.this.updateMsg = 
+/*     */             
+/* 455 */               (ChatColor.GREEN + "===================   Updater   ====================\n" + prefix + "An update is avalible for RandomLocation!\n" + prefix + "Current version: " + ChatColor.GOLD + Main.this.pl.getDescription().getVersion() + "\n" + prefix + "New Version: " + ChatColor.GOLD + updater.getRemoteVersion() + "\n" + prefix + "To update, go to: " + ChatColor.GOLD + updater.getLatestFileLink() + "\n" + ChatColor.GREEN + "==================================================");
+/* 456 */             Player[] arrayOfPlayer; int i = (arrayOfPlayer = Bukkit.getOnlinePlayers()).length; for (localPlayer1 = 0; localPlayer1 < i; localPlayer1++) { p = arrayOfPlayer[localPlayer1];
+/* 457 */               if (p.hasPermission("RandomLocation.Admin")) {
+/* 458 */                 p.sendMessage(Main.this.updateMsg);
+/*     */               }
+/*     */             }
+/* 461 */             System.out.println("=========================   Updater   ==========================");
+/* 462 */             Main.this.pl.getLogger().info("There is an update available: v" + updater.getRemoteVersion());
+/* 463 */             Main.this.pl.getLogger().info("Current version: v" + Main.this.pl.getDescription().getVersion());
+/* 464 */             Main.this.pl.getLogger().info("To update, go to " + updater.getLatestFileLink());
+/* 465 */             System.out.println("================================================================");
+/*     */           }
+/* 467 */           Bukkit.getScheduler().runTaskLaterAsynchronously(Main.this.pl, Main.this.updateTask, Main.this.convertStringToTicks(Main.this.getConfig().getString("AutoUpdater.CheckForUpdateInterval")));
+/* 468 */         } else if (updater.getLogs() == null) {
+/* 469 */           System.out.println("=========================   Updater   ==========================");
+/* 470 */           Main.this.pl.getLogger().info("Plugin is up to date");
+/* 471 */           System.out.println("================================================================");
+/*     */         } else {
+/* 473 */           System.out.println("=========================   Updater   ==========================");
+/* 474 */           String[] arrayOfString; localPlayer1 = (arrayOfString = updater.getLogs().split("\n")).length; for (p = 0; p < localPlayer1; p++) { String line = arrayOfString[p];
+/* 475 */             Main.this.pl.getLogger().log(Level.WARNING, line);
+/*     */           }
+/* 477 */           System.out.println("================================================================");
+/*     */         }
+/*     */       }
+/*     */     }
+/*     */   };
+/*     */ }
